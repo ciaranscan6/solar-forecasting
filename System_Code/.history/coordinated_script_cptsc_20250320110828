@@ -1,0 +1,72 @@
+import csv
+import board
+import adafruit_sht4x
+
+import os
+import time
+from datetime import datetime
+
+# Initialize I2C
+i2c = board.I2C()
+sensor = adafruit_sht4x.SHT4x(i2c)
+
+# Set the main directory for the project --------------(change this to the correct path like storage device maybe)------------------
+base_dir = "/home/cscan/Desktop/Project/CoordinatedScript"
+
+# Create a directory to save images photos_dir is the path for the images
+photos_dir = os.path.join(base_dir, "photos_rgb")
+os.makedirs(photos_dir, exist_ok=True)
+
+# Set the csv file to save the data
+csv_file = "/home/cscan/Desktop/Project/CoordinatedScript/data.csv"
+
+# Function to read temperature and humidity values
+def read_temp_and_humidity():
+    # Read data
+    temperature, humidity = sensor.measurements
+
+    return temperature, humidity
+
+def capture_image(timestamp):
+    filename = os.path.join(photos_dir, f"{timestamp}.jpg")
+    os.system(f"libcamera-jpeg -o {filename}")
+
+def write_to_csv(timestamp, lux, solar_irradiance, image_filename):
+    with open(csv_file, "a", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow([timestamp, lux, solar_irradiance, image_filename])
+
+def main():
+    bus = smbus2.SMBus(1)
+
+    while True:
+        # Get the current time
+        now = datetime.now()
+        
+        # Only take a photo and read from the lux sensor if it's the start of a new minute
+        if now.second == 0:
+            # Generate a timestamped row for the csv file
+            timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
+
+            # Read Temperature and Humidity from sensor
+            temp, humidity = read_temp_and_humidity()
+
+            # Generate an image
+            capture_image(timestamp)
+
+            # Generate image name
+            image_filename = f"{timestamp}_rgb.jpg"
+
+            # Write the values to a csv file
+            write_to_csv(timestamp, temp, humidity, image_filename)
+
+            print(f"Logged: {timestamp}, Temperature: {temp}, Humidity: {humidity}, Image: {image_filename}")
+
+            # Wait at least 1 second before checking again
+            time.sleep(1)
+
+        else:
+            time.sleep(0.5)  # Sleep to avoid high CPU usage
+
+if __name__ == "__main__":
+    main()
